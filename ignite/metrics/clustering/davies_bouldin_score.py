@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from typing import Any
+import warnings
 
 import torch
 from torch import Tensor
@@ -12,10 +13,20 @@ __all__ = ["DaviesBouldinScore"]
 def _davies_bouldin_score(features: Tensor, labels: Tensor) -> float:
     from sklearn.metrics import davies_bouldin_score
 
+    n_labels = torch.unique(labels).numel()
+    n_samples = features.shape[0]
+
+    if not 1 < n_labels < n_samples:
+        warnings.warn(
+            "DaviesBouldinScore requires the number of unique labels to be "
+            "between 2 and n_samples - 1 (inclusive). Returning NaN.",
+            UserWarning,
+        )
+        return float("nan")
+
     np_features = features.cpu().numpy()
     np_labels = labels.cpu().numpy()
-    score = davies_bouldin_score(np_features, np_labels)
-    return score
+    return davies_bouldin_score(np_features, np_labels)
 
 
 class DaviesBouldinScore(_ClusteringMetricBase):
